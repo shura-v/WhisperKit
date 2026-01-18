@@ -1082,13 +1082,24 @@ public extension AudioProcessor {
     }
 
     func stopRecording() {
-        // Remove the tap on any attached node
-        audioEngine?.attachedNodes.forEach { node in
+        guard let engine = audioEngine else { return }
+
+        // Remove tap from the input node explicitly.
+        engine.inputNode.removeTap(onBus: 0)
+
+        engine.attachedNodes.forEach { node in
             node.removeTap(onBus: 0)
         }
 
-        // Stop the audio engine
-        audioEngine?.stop()
+        // Disconnect the input to force the engine graph to fully tear down.
+        // This helps prevent lingering input connections across repeated start/stop cycles.
+        engine.disconnectNodeInput(engine.inputNode)
+
+        engine.stop()
+
+        // Reset clears the engine/node state so a subsequent start builds a fresh graph.
+        engine.reset()
+
         audioEngine = nil
     }
 }
