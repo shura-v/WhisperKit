@@ -1076,13 +1076,16 @@ public extension AudioProcessor {
     }
 
     func stopRecording() {
-        // Remove the tap on any attached node
-        audioEngine?.attachedNodes.forEach { node in
+        guard let engine = audioEngine else { return }
+
+        // Remove the tap from the input node first; other nodes are secondary.
+        engine.inputNode.removeTap(onBus: 0)
+        engine.attachedNodes.forEach { node in
             node.removeTap(onBus: 0)
         }
 
-        // Stop the audio engine
-        audioEngine?.stop()
+        engine.stop()
+        engine.reset()
         audioEngine = nil
     }
 }
