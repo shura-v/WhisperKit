@@ -213,6 +213,11 @@ open class AudioProcessor: NSObject, AudioProcessing {
 
     public var audioBufferCallback: (([Float]) -> Void)?
     public var minBufferLength = Int(Double(WhisperKit.sampleRate) * 0.1) // 0.1 second of audio at 16,000 Hz
+
+    /// Override to drop buffers without pausing the audio engine.
+    open func shouldAcceptBuffer(_ buffer: [Float]) -> Bool {
+        return true
+    }
     
     open func padOrTrim(fromArray audioArray: [Float], startAt startIndex: Int, toLength frameLength: Int) -> (any AudioProcessorOutputType)? {
         return AudioProcessor.padOrTrimAudio(fromArray: audioArray, startAt: startIndex, toLength: frameLength, saveSegment: false)
@@ -899,6 +904,7 @@ public extension AudioProcessor {
     /// We have a new buffer, process and store it.
     /// NOTE: Assumes audio is 16khz mono
     func processBuffer(_ buffer: [Float]) {
+        guard shouldAcceptBuffer(buffer) else { return }
         audioSamples.append(contentsOf: buffer)
 
         // Find the lowest average energy of the last 20 buffers ~2 seconds
