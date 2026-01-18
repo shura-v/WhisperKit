@@ -215,7 +215,7 @@ open class AudioProcessor: NSObject, AudioProcessing {
     public var minBufferLength = Int(Double(WhisperKit.sampleRate) * 0.1) // 0.1 second of audio at 16,000 Hz
 
     /// Override to drop buffers without pausing the audio engine.
-    open func shouldAcceptBuffer(_ buffer: [Float]) -> Bool {
+    open func shouldAcceptBuffer(_ buffer: AVAudioPCMBuffer) -> Bool {
         return true
     }
     
@@ -904,7 +904,6 @@ public extension AudioProcessor {
     /// We have a new buffer, process and store it.
     /// NOTE: Assumes audio is 16khz mono
     func processBuffer(_ buffer: [Float]) {
-        guard shouldAcceptBuffer(buffer) else { return }
         audioSamples.append(contentsOf: buffer)
 
         // Find the lowest average energy of the last 20 buffers ~2 seconds
@@ -1001,6 +1000,7 @@ public extension AudioProcessor {
         inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: nodeFormat) { [weak self] (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
             guard let self = self else { return }
             var buffer = buffer
+            guard self.shouldAcceptBuffer(buffer) else { return }
             if !buffer.format.sampleRate.isEqual(to: Double(WhisperKit.sampleRate)) {
                 do {
                     buffer = try Self.resampleBuffer(buffer, with: converter)
