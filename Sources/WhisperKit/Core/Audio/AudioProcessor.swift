@@ -213,10 +213,11 @@ open class AudioProcessor: NSObject, AudioProcessing {
 
     public var audioBufferCallback: (([Float]) -> Void)?
     public var minBufferLength = Int(Double(WhisperKit.sampleRate) * 0.1) // 0.1 second of audio at 16,000 Hz
+    public private(set) var isInputSuppressed = false
 
-    /// Override to drop buffers without pausing the audio engine.
-    open func shouldAcceptBuffer(_ buffer: AVAudioPCMBuffer) -> Bool {
-        return true
+    /// Suppress input buffers by replacing them with silence while keeping timing intact.
+    public func setInputSuppressed(_ isSuppressed: Bool) {
+        isInputSuppressed = isSuppressed
     }
     
     open func padOrTrim(fromArray audioArray: [Float], startAt startIndex: Int, toLength frameLength: Int) -> (any AudioProcessorOutputType)? {
@@ -1000,7 +1001,6 @@ public extension AudioProcessor {
         inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: nodeFormat) { [weak self] (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
             guard let self = self else { return }
             var buffer = buffer
-            guard self.shouldAcceptBuffer(buffer) else { return }
             if !buffer.format.sampleRate.isEqual(to: Double(WhisperKit.sampleRate)) {
                 do {
                     buffer = try Self.resampleBuffer(buffer, with: converter)
@@ -1010,7 +1010,10 @@ public extension AudioProcessor {
                 }
             }
 
-            let newBufferArray = Self.convertBufferToArray(buffer: buffer)
+            var newBufferArray = Self.convertBufferToArray(buffer: buffer)
+            if self.isInputSuppressed {
+                newBufferArray = Array(repeating: 0, count: newBufferArray.count)
+            }
             self.processBuffer(newBufferArray)
         }
 
