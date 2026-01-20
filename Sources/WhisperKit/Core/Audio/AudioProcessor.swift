@@ -1012,7 +1012,10 @@ public extension AudioProcessor {
 
             var newBufferArray = Self.convertBufferToArray(buffer: buffer)
             if self.isInputSuppressed {
-                newBufferArray = Array(repeating: 0, count: newBufferArray.count)
+                newBufferArray.withUnsafeMutableBufferPointer { ptr in
+                    guard let base = ptr.baseAddress else { return }
+                    vDSP_vclr(base, 1, vDSP_Length(ptr.count))
+                }
             }
             self.processBuffer(newBufferArray)
         }
