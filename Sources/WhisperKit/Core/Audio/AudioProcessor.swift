@@ -1011,12 +1011,7 @@ public extension AudioProcessor {
             }
 
             var newBufferArray = Self.convertBufferToArray(buffer: buffer)
-            if self.isInputSuppressed {
-                newBufferArray.withUnsafeMutableBufferPointer { ptr in
-                    guard let base = ptr.baseAddress else { return }
-                    vDSP_vclr(base, 1, vDSP_Length(ptr.count))
-                }
-            }
+            self.suppressInputIfNeeded(&newBufferArray)
             self.processBuffer(newBufferArray)
         }
 
@@ -1096,5 +1091,13 @@ public extension AudioProcessor {
         // Stop the audio engine
         audioEngine?.stop()
         audioEngine = nil
+    }
+
+    func suppressInputIfNeeded(_ buffer: inout [Float]) {
+        guard isInputSuppressed else { return }
+        buffer.withUnsafeMutableBufferPointer { ptr in
+            guard let base = ptr.baseAddress else { return }
+            vDSP_vclr(base, 1, vDSP_Length(ptr.count))
+        }
     }
 }
