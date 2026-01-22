@@ -379,6 +379,15 @@ final class UnitTests: XCTestCase {
         XCTAssertEqual(buffer, [0.25, -0.5, 1.0], "Buffer should remain unchanged when suppression is disabled")
     }
 
+    func testInputSuppressionToggleState() {
+        let audioProcessor = AudioProcessor()
+        XCTAssertFalse(audioProcessor.isInputSuppressed, "Suppression should be disabled by default")
+        audioProcessor.setInputSuppressed(true)
+        XCTAssertTrue(audioProcessor.isInputSuppressed, "Suppression should be enabled after setting true")
+        audioProcessor.setInputSuppressed(false)
+        XCTAssertFalse(audioProcessor.isInputSuppressed, "Suppression should be disabled after setting false")
+    }
+
     func testAudioResample() throws {
         let audioFileURL = try XCTUnwrap(
             Bundle.current(for: self).url(forResource: "jfk", withExtension: "wav"),
