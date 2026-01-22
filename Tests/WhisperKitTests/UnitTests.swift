@@ -363,6 +363,31 @@ final class UnitTests: XCTestCase {
         XCTAssertEqual(paddedSamples.count, 1600, "Padded or trimmed samples count is not as expected")
     }
 
+    func testSuppressInputIfNeededMutesBuffer() {
+        let audioProcessor = AudioProcessor()
+        audioProcessor.setInputSuppressed(true)
+        var buffer: [Float] = [0.25, -0.5, 1.0]
+        audioProcessor.suppressInputIfNeeded(&buffer)
+        XCTAssertTrue(buffer.allSatisfy { $0 == 0.0 }, "Suppressed buffer should contain silence")
+    }
+
+    func testSuppressInputIfNeededNoopWhenDisabled() {
+        let audioProcessor = AudioProcessor()
+        audioProcessor.setInputSuppressed(false)
+        var buffer: [Float] = [0.25, -0.5, 1.0]
+        audioProcessor.suppressInputIfNeeded(&buffer)
+        XCTAssertEqual(buffer, [0.25, -0.5, 1.0], "Buffer should remain unchanged when suppression is disabled")
+    }
+
+    func testInputSuppressionToggleState() {
+        let audioProcessor = AudioProcessor()
+        XCTAssertFalse(audioProcessor.isInputSuppressed, "Suppression should be disabled by default")
+        audioProcessor.setInputSuppressed(true)
+        XCTAssertTrue(audioProcessor.isInputSuppressed, "Suppression should be enabled after setting true")
+        audioProcessor.setInputSuppressed(false)
+        XCTAssertFalse(audioProcessor.isInputSuppressed, "Suppression should be disabled after setting false")
+    }
+
     func testAudioResample() throws {
         let audioFileURL = try XCTUnwrap(
             Bundle.current(for: self).url(forResource: "jfk", withExtension: "wav"),
