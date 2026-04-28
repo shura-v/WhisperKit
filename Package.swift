@@ -5,7 +5,7 @@ import PackageDescription
 import Foundation
 
 let package = Package(
-    name: "whisperkit",
+    name: "argmax-oss-swift",
     platforms: [
         .iOS(.v16),
         .macOS(.v13),
@@ -13,6 +13,10 @@ let package = Package(
         .visionOS(.v1)
     ],
     products: [
+        .library(
+            name: "ArgmaxOSS",
+            targets: ["ArgmaxOSS"]
+        ),
         .library(
             name: "WhisperKit",
             targets: ["WhisperKit"]
@@ -26,12 +30,15 @@ let package = Package(
             targets: ["SpeakerKit"]
         ),
         .executable(
+            name: "argmax-cli",
+            targets: ["ArgmaxCLI"]
+        ),
+        .executable(
             name: "whisperkit-cli",
-            targets: ["WhisperKitCLI"]
-        )
+            targets: ["ArgmaxCLI"]
+        ),
     ],
     dependencies: [
-        .package(url: "https://github.com/huggingface/swift-transformers.git", .upToNextMinor(from: "1.1.6")),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0"),
     ] + (isServerEnabled() ? [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.115.1"),
@@ -42,25 +49,27 @@ let package = Package(
     ] : []),
     targets: [
         .target(
-            name: "ArgmaxCore",
+            name: "ArgmaxOSS",
             dependencies: [
-                .product(name: "Hub", package: "swift-transformers"),
+                "ArgmaxCore",
+                "WhisperKit",
+                "TTSKit",
+                "SpeakerKit",
             ]
+        ),
+        .target(
+            name: "ArgmaxCore"
         ),
         .target(
             name: "WhisperKit",
             dependencies: [
                 "ArgmaxCore",
-                .product(name: "Hub", package: "swift-transformers"),
-                .product(name: "Tokenizers", package: "swift-transformers"),
             ]
         ),
         .target(
             name: "TTSKit",
             dependencies: [
                 "ArgmaxCore",
-                .product(name: "Tokenizers", package: "swift-transformers"),
-                .product(name: "Hub", package: "swift-transformers"),
             ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
@@ -69,7 +78,6 @@ let package = Package(
             dependencies: [
                 "ArgmaxCore",
                 "WhisperKit",
-                .product(name: "Hub", package: "swift-transformers"),
             ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
@@ -77,8 +85,6 @@ let package = Package(
             name: "WhisperKitTests",
             dependencies: [
                 "WhisperKit",
-                .product(name: "Hub", package: "swift-transformers"),
-                .product(name: "Tokenizers", package: "swift-transformers"),
             ],
             exclude: ["UnitTestsPlan.xctestplan"],
             resources: [
@@ -105,7 +111,7 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "WhisperKitCLI",
+            name: "ArgmaxCLI",
             dependencies: [
                 "WhisperKit",
                 "TTSKit",
@@ -116,6 +122,7 @@ let package = Package(
                 .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
                 .product(name: "OpenAPIVapor", package: "swift-openapi-vapor"),
             ] : []),
+            path: "Sources/ArgmaxCLI",
             exclude: (isServerEnabled() ? [] : ["Server"]),
             swiftSettings: (isServerEnabled() ? [.define("BUILD_SERVER_CLI")] : [])
         )
