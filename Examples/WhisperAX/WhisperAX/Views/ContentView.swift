@@ -42,7 +42,6 @@ struct ContentView: View {
     @AppStorage("repoName") private var repoName: String = "argmaxinc/whisperkit-coreml"
     @AppStorage("enableTimestamps") private var enableTimestamps: Bool = true
     @AppStorage("enablePromptPrefill") private var enablePromptPrefill: Bool = true
-    @AppStorage("enableCachePrefill") private var enableCachePrefill: Bool = true
     @AppStorage("enableSpecialCharacters") private var enableSpecialCharacters: Bool = false
     @AppStorage("enableEagerDecoding") private var enableEagerDecoding: Bool = false
     @AppStorage("enableDecoderPreview") private var enableDecoderPreview: Bool = true
@@ -1103,14 +1102,6 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            HStack {
-                Text("Cache Prefill")
-                InfoButton("When Cache Prefill is on, the decoder will try to use a lookup table of pre-computed KV caches instead of computing them during the decoding loop. \nThis allows the model to skip the compute required to force the initial prefill tokens, and can speed up inference")
-                Spacer()
-                Toggle("", isOn: $enableCachePrefill)
-            }
-            .padding(.horizontal)
-
             VStack {
                 HStack {
                     Text("Chunking Strategy")
@@ -1360,7 +1351,6 @@ struct ContentView: View {
             - Mel Spectrogram:  \(getComputeOptions().melCompute.description)
             - Audio Encoder:    \(getComputeOptions().audioEncoderCompute.description)
             - Text Decoder:     \(getComputeOptions().textDecoderCompute.description)
-            - Prefill Data:     \(getComputeOptions().prefillCompute.description)
         """)
 
         whisperKit = nil
@@ -1803,7 +1793,6 @@ struct ContentView: View {
             temperatureFallbackCount: Int(fallbackCount),
             sampleLength: Int(sampleLength),
             usePrefillPrompt: enablePromptPrefill,
-            usePrefillCache: enableCachePrefill,
             skipSpecialTokens: !enableSpecialCharacters,
             withoutTimestamps: !enableTimestamps,
             wordTimestamps: true,
@@ -1813,7 +1802,7 @@ struct ContentView: View {
         )
 
         // Early stopping checks
-        let decodingCallback: ((TranscriptionProgress) -> Bool?) = { (progress: TranscriptionProgress) in
+        let decodingCallback: TranscriptionCallback = { (progress: TranscriptionProgress) in
             DispatchQueue.main.async {
                 let fallbacks = Int(progress.timings.totalDecodingFallbacks)
                 let chunkId = isStreamMode ? 0 : progress.windowId
@@ -2054,7 +2043,6 @@ struct ContentView: View {
             temperatureFallbackCount: Int(fallbackCount),
             sampleLength: Int(sampleLength),
             usePrefillPrompt: enablePromptPrefill,
-            usePrefillCache: enableCachePrefill,
             skipSpecialTokens: !enableSpecialCharacters,
             withoutTimestamps: !enableTimestamps,
             wordTimestamps: true, // required for eager mode
@@ -2063,7 +2051,7 @@ struct ContentView: View {
         )
 
         // Early stopping checks
-        let decodingCallback: ((TranscriptionProgress) -> Bool?) = { progress in
+        let decodingCallback: TranscriptionCallback = { progress in
             DispatchQueue.main.async {
                 let fallbacks = Int(progress.timings.totalDecodingFallbacks)
                 if progress.text.count < currentText.count {

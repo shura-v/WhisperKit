@@ -132,7 +132,7 @@ open class TTSKit: @unchecked Sendable {
         self.config = config
         self.seed = config.seed
 
-        Logging.shared.logLevel = config.verbose ? config.logLevel : .none
+        Logging.updateLogLevel(config.verbose ? config.logLevel : .none)
 
         setupPipeline(for: config.model, config: config)
 
@@ -589,7 +589,7 @@ open class TTSKit: @unchecked Sendable {
     /// Mirrors `WhisperKit.loggingCallback(_:)`. Pass `nil` to restore the default
     /// print-based logger.
     open func loggingCallback(_ callback: Logging.LoggingCallback?) {
-        Logging.shared.loggingCallback = callback
+        Logging.updateCallback(callback)
     }
 
     // MARK: - Prompt cache management
